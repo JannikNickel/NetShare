@@ -1,0 +1,57 @@
+﻿<Page x:Class="NetShare.Views.DropContentPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:local="clr-namespace:NetShare"
+	  xmlns:converters="clr-namespace:NetShare.Converters"
+	  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+	  xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
+      mc:Ignorable="d" 
+      d:DesignWidth="500" d:DesignHeight="200"
+	  ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
+	  ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+	  Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+      Title="DropContentPage">
+	<Page.Resources>
+		<converters:DragEventArgsConverter x:Key="DragEventArgsConverter" />
+	</Page.Resources>
+	<Grid Name="MainGrid" Background="Transparent" AllowDrop="True">
+		<behaviors:Interaction.Triggers>
+			<behaviors:EventTrigger EventName="Drop">
+				<behaviors:InvokeCommandAction Command="{Binding DropFilesCommand}" PassEventArgsToCommand="True" EventArgsConverter="{StaticResource DragEventArgsConverter}" />
+			</behaviors:EventTrigger>
+		</behaviors:Interaction.Triggers>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="64"/>
+			<RowDefinition Height="*"/>
+			<RowDefinition Height="64"/>
+		</Grid.RowDefinitions>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="64"/>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="64"/>
+		</Grid.ColumnDefinitions>
+		<ui:TextBlock Text="Drop content to transfer..." HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Opacity="0.78" Grid.Column="1" Grid.Row="1" />
+		<ui:Image Margin="5" Opacity="0.25" Grid.Row="2" Grid.Column="0">
+			<ui:Image.Source>
+				<BitmapImage UriSource="pack://application:,,,/Assets/Edge.png" Rotation="Rotate0" />
+			</ui:Image.Source>
+		</ui:Image>
+		<ui:Image Margin="5" Opacity="0.25" Grid.Row="0" Grid.Column="0">
+			<ui:Image.Source>
+				<BitmapImage UriSource="pack://application:,,,/Assets/Edge.png" Rotation="Rotate90" />
+			</ui:Image.Source>
+		</ui:Image>
+		<ui:Image Margin="5" Opacity="0.25" Grid.Row="0" Grid.Column="2">
+			<ui:Image.Source>
+				<BitmapImage UriSource="pack://application:,,,/Assets/Edge.png" Rotation="Rotate180" />
+			</ui:Image.Source>
+		</ui:Image>
+		<ui:Image Margin="5" Opacity="0.25" Grid.Row="2" Grid.Column="2">
+			<ui:Image.Source>
+				<BitmapImage UriSource="pack://application:,,,/Assets/Edge.png" Rotation="Rotate270" />
+			</ui:Image.Source>
+		</ui:Image>
+	</Grid>
+</Page>
