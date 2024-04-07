@@ -32,7 +32,10 @@
 			<ColumnDefinition Width="*"/>
 			<ColumnDefinition Width="64"/>
 		</Grid.ColumnDefinitions>
-		<ui:TextBlock Text="Drop content to transfer..." HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Opacity="0.78" Grid.Column="1" Grid.Row="1" />
+		<StackPanel Grid.Column="1" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+			<ui:TextBlock Text="Drop content to transfer..." HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Opacity="0.78" />
+			<ui:TextBlock Text="Or wait to receive content..." HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" Opacity="0.78" />
+		</StackPanel>
 		<ui:Image Margin="5" Opacity="0.25" Grid.Row="2" Grid.Column="0">
 			<ui:Image.Source>
 				<BitmapImage UriSource="pack://application:,,,/Assets/Edge.png" Rotation="Rotate0" />

@@ -13,6 +13,8 @@ namespace NetShare.Models
         private readonly List<string> inputFiles;
         private readonly List<FileInfo> fileEntries = new List<FileInfo>();
 
+        public int EntryCount => fileEntries.Count;
+
         public FileCollection(string[] files)
         {
             inputFiles = FilteredInput(files);

@@ -1,4 +1,5 @@
 ﻿using NetShare.Models;
+using NetShare.Services;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,6 +11,9 @@ namespace NetShare.ViewModels
     {
         private int fileCount;
         private double fileSize;
+
+        private INavigationService navService;
+        private INotificationService notificationService;
 
         public AsyncRelayCommand<FileCollection> LoadContentCommand { get; init; }
 
@@ -25,8 +29,10 @@ namespace NetShare.ViewModels
             set => SetProperty(ref fileSize, value);
         }
 
-        public LoadViewModel()
+        public LoadViewModel(INavigationService navService, INotificationService notificationService)
         {
+            this.navService = navService;
+            this.notificationService = notificationService;
             LoadContentCommand = new AsyncRelayCommand<FileCollection>(LoadContent, () => new CancellationTokenSource());
         }
 
@@ -46,7 +52,16 @@ namespace NetShare.ViewModels
                     FileSize = p.size;
                 });
             });
+
             await fileCollection.LoadFilesAsync(progress);
+            if(fileCollection.EntryCount == 0)
+            {
+                notificationService.Show("No files found!", "The dropped content doesn't not contain any files that can be transfered...", NotificationType.Error);
+                navService.NavigateTo<DropViewModel>();
+                return;
+            }
+
+
         }
     }
 }

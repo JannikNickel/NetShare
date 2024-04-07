@@ -21,6 +21,7 @@ namespace NetShare
             services.AddScoped<LoadViewModel>();
 
             services.AddSingleton<INavigationService, MainNavService>();
+            services.AddSingleton<INotificationService, SnackbarService>();
 
             services.AddSingleton<IServiceProvider>(n => n);
 

@@ -1,5 +1,5 @@
-﻿using NetShare.ViewModels;
-using NetShare.Views;
+﻿using NetShare.Services;
+using NetShare.ViewModels;
 using System;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -21,10 +21,12 @@ namespace NetShare.Views
         [DllImport("user32.dll")]
         private static extern bool InsertMenu(IntPtr hMenu, int wPostiion, int wFlags, int wIdNewItem, string lpNewItem);
 
-        public MainWindow(NavViewModel viewModel)
+        public MainWindow(NavViewModel viewModel, INotificationService notificationService)
         {
             InitializeComponent();
             this.DataContext = viewModel;
+
+            notificationService.SetPresenter(SnackbarPresenter);
 
             Loaded += MainWindow_Loaded;
         }
