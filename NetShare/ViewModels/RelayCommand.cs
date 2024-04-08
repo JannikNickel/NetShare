@@ -24,4 +24,26 @@ namespace NetShare.ViewModels
             execute?.Invoke((T?)parameter);
         }
     }
+
+    public class RelayCommand(Action execute, Func<bool>? canExecute = null) : ICommand
+    {
+        private readonly Action execute = execute;
+        private readonly Func<bool>? canExecute = canExecute;
+
+        public event EventHandler? CanExecuteChanged
+        {
+            add => CommandManager.RequerySuggested += value;
+            remove => CommandManager.RequerySuggested -= value;
+        }
+
+        public bool CanExecute(object? parameter = null)
+        {
+            return canExecute?.Invoke() ?? true;
+        }
+
+        public void Execute(object? parameter = null)
+        {
+            execute?.Invoke();
+        }
+    }
 }

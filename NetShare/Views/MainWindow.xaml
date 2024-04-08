@@ -25,12 +25,12 @@
 			<RowDefinition Height="40"/>
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
+		<Frame Name="MainFrame" Grid.Row="1" Content="{Binding CurrentViewModel}" />
+		<ui:SnackbarPresenter Name="SnackbarPresenter" Grid.Row="1" Margin="-10" />
 		<ui:TitleBar Title="NetShare" Grid.Row="0" CanMaximize="False" ShowMaximize="False">
 			<ui:TitleBar.Icon>
 				<ui:ImageIcon Source="pack://application:,,,/Assets/AppIcon.png" />
 			</ui:TitleBar.Icon>
 		</ui:TitleBar>
-		<Frame Name="MainFrame" Grid.Row="1" Content="{Binding CurrentViewModel}" />
-		<ui:SnackbarPresenter Name="SnackbarPresenter" Grid.Row="1" Margin="-10" />
 	</Grid>
 </ui:FluentWindow>

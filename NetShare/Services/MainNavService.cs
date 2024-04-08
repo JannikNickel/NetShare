@@ -1,5 +1,4 @@
-﻿using NetShare.Models;
-using NetShare.ViewModels;
+﻿using NetShare.ViewModels;
 using System;
 
 namespace NetShare.Services
