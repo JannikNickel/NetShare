@@ -18,10 +18,10 @@ namespace NetShare.ViewModels
             set => SetProperty(ref currViewModel, value);
         }
 
-        public NavViewModel(INavigationService navService, IWindowService windowService)
+        public NavViewModel(INavigationService navService, IWindowService windowService, ISearchSenderService searchService)
         {
             this.windowService = windowService;
-            this.currViewModel = new DropViewModel(navService);
+            this.currViewModel = new DropViewModel(navService, searchService);
             OpenSettingsCommand = new RelayCommand(OpenSettings);
         }
 

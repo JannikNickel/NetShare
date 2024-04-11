@@ -12,6 +12,7 @@ namespace NetShare.Services
             NavViewModel? navViewModel = serviceProvider.GetService<NavViewModel>();
             if(navViewModel != null)
             {
+                navViewModel.CurrentViewModel?.OnClose();
                 T? vm = serviceProvider.GetService<T>();
                 navViewModel.CurrentViewModel = vm;
                 return vm;

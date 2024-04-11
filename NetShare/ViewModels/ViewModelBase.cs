@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace NetShare.ViewModels
@@ -14,13 +15,18 @@ namespace NetShare.ViewModels
 
         protected virtual bool SetProperty<T>(ref T? field, T? value, [CallerMemberName] string? propertyName = null)
         {
-            if(Equals(field, null))
+            if(EqualityComparer<T>.Default.Equals(field, value))
             {
                 return false;
             }
             field = value;
             OnPropertyChanged(propertyName);
             return true;
+        }
+
+        public virtual void OnClose()
+        {
+            
         }
     }
 }

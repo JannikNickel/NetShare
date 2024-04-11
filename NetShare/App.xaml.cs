@@ -14,17 +14,20 @@ namespace NetShare
         public App()
         {
             ServiceCollection services = new ServiceCollection();
-            services.AddScoped<MainWindow>();
+            services.AddSingleton<MainWindow>();
             services.AddTransient<SettingsWindow>();
 
-            services.AddScoped<DropViewModel>();
-            services.AddScoped<NavViewModel>();
-            services.AddScoped<LoadViewModel>();
+            services.AddSingleton<NavViewModel>();
+            services.AddTransient<DropViewModel>();
+            services.AddTransient<LoadViewModel>();
+            services.AddTransient<SelectTargetViewModel>();
             services.AddTransient<SettingsViewModel>();
 
             services.AddSingleton<INavigationService, MainNavService>();
             services.AddSingleton<INotificationService, SnackbarService>();
             services.AddSingleton<ISettingsService, PersistentSettingsService>();
+            services.AddTransient<ISearchSenderService, UdpSearchSenderService>();
+            services.AddTransient<ISearchListenerService, UdpSearchListenerService>();
 
             services.AddSingleton<IWindowService, WindowService>();
             services.AddSingleton<IWindowFactory>(new WindowFactoryFunc(GenerateWindow));

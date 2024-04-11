@@ -61,7 +61,8 @@ namespace NetShare.ViewModels
                 return;
             }
 
-
+            SelectTargetViewModel? stvm = navService.NavigateTo<SelectTargetViewModel>();
+            stvm?.SetContent(fileCollection);
         }
     }
 }

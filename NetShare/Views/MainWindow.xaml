@@ -19,6 +19,9 @@
 		<DataTemplate DataType="{x:Type vm:LoadViewModel}">
 			<views:LoadContentPage />
 		</DataTemplate>
+		<DataTemplate DataType="{x:Type vm:SelectTargetViewModel}">
+			<views:SelectTargetPage />
+		</DataTemplate>
 	</Window.Resources>
 	<Grid>
 		<Grid.RowDefinitions>
