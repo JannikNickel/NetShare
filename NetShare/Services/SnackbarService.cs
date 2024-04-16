@@ -42,5 +42,17 @@ namespace NetShare.Services
             snackbar.Timeout = timeout ?? DefaultTimeout;
             snackbar.Show();
         }
+
+        public bool ShowDialog(string title, string message)
+        {
+            MessageBox mb = new MessageBox()
+            {
+                Title = title,
+                Content = message,
+                PrimaryButtonText = "Yes",
+                CloseButtonText = "No"
+            };
+            return mb.ShowDialogAsync().ConfigureAwait(false).GetAwaiter().GetResult() == MessageBoxResult.Primary;
+        }
     }
 }

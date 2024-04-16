@@ -5,12 +5,10 @@ using System.Threading.Tasks;
 
 namespace NetShare.Services
 {
-    public interface IReceiveContentService : IProcessService
+    public interface IReceiveContentService : IContentTransferService
     {
-        event Action<string>? Error;
         event Action? BeginTransfer;
-        event Action? Completed;
 
-        void SetConfirmTransferCallback(Func<bool>? callback);
+        void SetConfirmTransferCallback(Func<string, bool>? callback);
     }
 }

@@ -5,9 +5,8 @@ using System.Threading.Tasks;
 
 namespace NetShare.Services
 {
-    public interface ISendContentService : IProcessService
+    public interface ISendContentService : IContentTransferService
     {
-        event Action<string>? Error;
         event Action<int, long>? Progress;
 
         void SetTransferData(TransferTarget target, FileCollection content);

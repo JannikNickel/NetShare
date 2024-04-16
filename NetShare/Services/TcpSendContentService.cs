@@ -24,6 +24,7 @@ namespace NetShare.Services
         private FileCollection? content;
 
         public event Action<string>? Error;
+        public event Action? Completed;
         public event Action<int, long>? Progress;
 
         public TcpSendContentService(ISettingsService settingsService)
@@ -71,7 +72,8 @@ namespace NetShare.Services
                 await client.ConnectAsync(target.Ip, settingsService.CurrentSettings?.TransferPort ?? 0, ct);
 
                 TransferProtocol protocol = new TransferProtocol(client);
-                await protocol.SendAsync(new TransferMessage(TransferMessage.Type.RequestTransfer));
+                TransferMessage msg = new TransferMessage(TransferMessage.Type.RequestTransfer, $"{settingsService.CurrentSettings?.DisplayName ?? "Unknown"} ({TransferTarget.GetLocalIp()?.ToString()})");
+                await protocol.SendAsync(msg);
 
                 TransferMessage res = await protocol.ReadAsync(ct);
                 if(res.type != TransferMessage.Type.AcceptReceive)
@@ -88,14 +90,17 @@ namespace NetShare.Services
                     string relPath = !string.IsNullOrEmpty(rootPath)
                         ? Path.GetRelativePath(rootPath, file.FullName)
                         : file.FullName[(Path.GetPathRoot(file.FullName)?.Length ?? 0)..];
-                    TransferMessage msg = new TransferMessage(TransferMessage.Type.File, relPath, fileSize);
+                    msg = new TransferMessage(TransferMessage.Type.File, relPath, fileSize);
                     await protocol.SendAsync(msg, file, ct);
                     completedSize += fileSize;
                     ReportProgress(i + 1, completedSize);
                 }
 
-                client.Dispose();
-                return;
+                msg = new TransferMessage(TransferMessage.Type.Complete);
+                await protocol.SendAsync(msg, null, ct);
+
+                await dispatcher.InvokeAsync(() => Completed?.Invoke(), DispatcherPriority.Send);
+                Stop();
             }
             catch(Exception e)
             {

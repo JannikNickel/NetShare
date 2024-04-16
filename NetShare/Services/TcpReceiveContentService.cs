@@ -19,12 +19,11 @@ namespace NetShare.Services
         private TcpListener? server;
         private Dispatcher dispatcher;
         private CancellationTokenSource? cts;
-        private SemaphoreSlim callbackSemaphore = new SemaphoreSlim(1, 1);
-        private Func<bool>? confirmTransferCallback = null;
+        private Func<string, bool>? confirmTransferCallback = null;
 
         public event Action<string>? Error;
-        public event Action? BeginTransfer;
         public event Action? Completed;
+        public event Action? BeginTransfer;
 
         public TcpReceiveContentService(ISettingsService settingsService)
         {
@@ -52,6 +51,12 @@ namespace NetShare.Services
             cts?.Cancel();
             cts?.Dispose();
             server?.Dispose();
+        }
+
+        private void Restart()
+        {
+            Stop();
+            Start();
         }
 
         private async void AwaitConnection(CancellationToken ct)
@@ -84,23 +89,22 @@ namespace NetShare.Services
                     }
 
                     TransferMessage.Type reqAnswer = TransferMessage.Type.AcceptReceive;
-                    await callbackSemaphore.WaitAsync(ct);
-                    try
+                    await dispatcher.InvokeAsync(() =>
                     {
                         if(confirmTransferCallback != null)
                         {
-                            await dispatcher.InvokeAsync(() =>
-                            {
-                                reqAnswer = confirmTransferCallback.Invoke() ? TransferMessage.Type.AcceptReceive : TransferMessage.Type.DeclineReceive;
-                            }, DispatcherPriority.Send, ct);
+                            reqAnswer = confirmTransferCallback.Invoke(msg.path ?? "") ? TransferMessage.Type.AcceptReceive : TransferMessage.Type.DeclineReceive;
                         }
-                    }
-                    finally
-                    {
-                        callbackSemaphore.Release();
-                    }
+                    }, DispatcherPriority.Send, ct);
                     msg = new TransferMessage(reqAnswer);
                     await protocol.SendAsync(msg);
+                    if(reqAnswer == TransferMessage.Type.DeclineReceive)
+                    {
+                        Restart();
+                        return;
+                    }
+
+                    await dispatcher.InvokeAsync(() => BeginTransfer?.Invoke(), DispatcherPriority.Send);
 
                     do
                     {
@@ -177,11 +181,9 @@ namespace NetShare.Services
             });
         }
 
-        public void SetConfirmTransferCallback(Func<bool>? callback)
+        public void SetConfirmTransferCallback(Func<string, bool>? callback)
         {
-            callbackSemaphore.Wait();
             confirmTransferCallback = callback;
-            callbackSemaphore.Release();
         }
     }
 }

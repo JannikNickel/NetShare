@@ -24,6 +24,7 @@ namespace NetShare.ViewModels
             this.receiveService = receiveService;
             this.receiveService.Error += OnReceiveError;
             this.receiveService.BeginTransfer += OnBeginTransfer;
+            this.receiveService.SetConfirmTransferCallback(ConfirmTransfer);
             this.receiveService.Start();
             DropFilesCommand = new RelayCommand<string[]>(HandleFileDrop);
         }
@@ -32,7 +33,12 @@ namespace NetShare.ViewModels
         {
             base.OnClose();
             searchService.Stop();
-            receiveService?.Stop();
+            if(receiveService != null)
+            {
+                receiveService.Error -= OnReceiveError;
+                receiveService.BeginTransfer -= OnBeginTransfer;
+                receiveService.Stop();
+            }
         }
 
         private void HandleFileDrop(string[]? files)
@@ -48,6 +54,11 @@ namespace NetShare.ViewModels
             }
         }
 
+        private bool ConfirmTransfer(string sender)
+        {
+            return notificationService.ShowDialog("Receive content?", $"Do you want to receive files from {sender}?");
+        }
+
         private void OnReceiveError(string error)
         {
             notificationService.Show("Receive Error", error, NotificationType.Error);
@@ -58,10 +69,16 @@ namespace NetShare.ViewModels
         {
             IReceiveContentService? receiveService = this.receiveService;
             this.receiveService = null;
-            TransferViewModel? tvm = navService.NavigateTo<TransferViewModel>();
-            if(tvm != null)
+            if(receiveService != null)
             {
-                
+                receiveService.Error -= OnReceiveError;
+                receiveService.BeginTransfer -= OnBeginTransfer;
+
+                TransferViewModel? tvm = navService.NavigateTo<TransferViewModel>();
+                if(tvm != null && tvm.ReceiveContentCommand.CanExecute(receiveService))
+                {
+                    tvm.ReceiveContentCommand.Execute(receiveService);
+                }
             }
         }
     }

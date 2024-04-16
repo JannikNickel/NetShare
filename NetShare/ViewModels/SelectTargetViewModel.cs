@@ -12,6 +12,7 @@ namespace NetShare.ViewModels
     {
         private readonly INavigationService navService;
         private readonly ISearchListenerService searchService;
+        private readonly ISendContentService sendContentService;
 
         private FileCollection? content;
         private bool noTargets = false;
@@ -38,12 +39,13 @@ namespace NetShare.ViewModels
             set => SetProperty(ref selectedTarget, value);
         }
 
-        public SelectTargetViewModel(INavigationService navService, ISearchListenerService searchService)
+        public SelectTargetViewModel(INavigationService navService, ISearchListenerService searchService, ISendContentService sendContentService)
         {
             this.navService = navService;
             this.searchService = searchService;
             this.searchService.TargetsChanged += UpdateTargets;
             this.searchService.Start();
+            this.sendContentService = sendContentService;
             TransferCommand = new RelayCommand(BeginTransfer);
         }
 
@@ -73,7 +75,7 @@ namespace NetShare.ViewModels
             }
 
             TransferViewModel? tvm = navService.NavigateTo<TransferViewModel>();
-            (TransferTarget, FileCollection) param = (SelectedTarget, content);
+            (ISendContentService, TransferTarget, FileCollection) param = (sendContentService, SelectedTarget, content);
             if(tvm?.TransferContentCommand.CanExecute(param) == true)
             {
                 tvm?.TransferContentCommand.Execute(param);
