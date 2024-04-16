@@ -1,5 +1,7 @@
 ﻿using NetShare.Models;
 using NetShare.Services;
+using System;
+using System.Threading;
 using System.Windows.Input;
 
 namespace NetShare.ViewModels
@@ -7,15 +9,22 @@ namespace NetShare.ViewModels
     public class DropViewModel : ViewModelBase
     {
         private readonly INavigationService navService;
+        private readonly INotificationService notificationService;
         private readonly ISearchSenderService searchService;
+        private IReceiveContentService? receiveService;
 
         public ICommand DropFilesCommand { get; init; }
 
-        public DropViewModel(INavigationService navService, ISearchSenderService searchService)
+        public DropViewModel(INavigationService navService, INotificationService notificationService, ISearchSenderService searchService, IReceiveContentService receiveService)
         {
             this.navService = navService;
+            this.notificationService = notificationService;
             this.searchService = searchService;
             this.searchService.Start();
+            this.receiveService = receiveService;
+            this.receiveService.Error += OnReceiveError;
+            this.receiveService.BeginTransfer += OnBeginTransfer;
+            this.receiveService.Start();
             DropFilesCommand = new RelayCommand<string[]>(HandleFileDrop);
         }
 
@@ -23,6 +32,7 @@ namespace NetShare.ViewModels
         {
             base.OnClose();
             searchService.Stop();
+            receiveService?.Stop();
         }
 
         private void HandleFileDrop(string[]? files)
@@ -35,6 +45,23 @@ namespace NetShare.ViewModels
                 {
                     lvm?.LoadContentCommand.Execute(fc);
                 }
+            }
+        }
+
+        private void OnReceiveError(string error)
+        {
+            notificationService.Show("Receive Error", error, NotificationType.Error);
+            receiveService?.Start();
+        }
+
+        private void OnBeginTransfer()
+        {
+            IReceiveContentService? receiveService = this.receiveService;
+            this.receiveService = null;
+            TransferViewModel? tvm = navService.NavigateTo<TransferViewModel>();
+            if(tvm != null)
+            {
+                
             }
         }
     }

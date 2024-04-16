@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace NetShare.Services
 {
-    public interface IBroadcastSearchService
+    public interface IProcessService
     {
         void Start();
         void Stop();

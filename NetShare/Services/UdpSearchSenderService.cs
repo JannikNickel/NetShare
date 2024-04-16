@@ -20,12 +20,10 @@ namespace NetShare.Services
 
         public void Start()
         {
-            if(isRunning)
+            if(!isRunning.SetIfChanged(true))
             {
                 return;
             }
-            isRunning = true;
-
             client = new UdpClient(port);
             client.EnableBroadcast = true;
             sendTimer = new Timer(async _ => await BroadcastMessage(), null, TimeSpan.Zero, TimeSpan.FromSeconds(interval));
@@ -33,12 +31,10 @@ namespace NetShare.Services
 
         public void Stop()
         {
-            if(!isRunning)
+            if(!isRunning.SetIfChanged(false))
             {
                 return;
             }
-            isRunning = false;
-
             client?.Dispose();
             sendTimer?.Dispose();
         }

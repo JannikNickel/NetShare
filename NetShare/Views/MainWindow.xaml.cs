@@ -15,7 +15,6 @@ namespace NetShare.Views
             this.DataContext = viewModel;
 
             notificationService.SetPresenter(SnackbarPresenter);
-
             Loaded += MainWindow_Loaded;
         }
 

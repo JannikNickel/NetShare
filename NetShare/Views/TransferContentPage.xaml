@@ -11,9 +11,23 @@
 	  ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
 	  Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Title="DropContentPage">
-	<StackPanel HorizontalAlignment="Center" Margin="15,15,15,15">
-		<ui:TextBlock Margin="0,10,0,0" Text="Transfering files..." HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Opacity="0.78" />
-		<ui:TextBlock Margin="0,10,0,0" Text="" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Opacity="0.78" />
-		<ui:ProgressRing Margin="0,20,0,0" Width="64" Height="64" IsIndeterminate="True" />
+	<StackPanel Margin="15,15,15,10">
+		<ui:TextBlock Margin="0,5,0,0" Text="Transferring files..." HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Opacity="0.78" />
+		<ui:TextBlock Margin="0,25,0,0" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Opacity="0.78">
+			<ui:TextBlock.Text>
+				<MultiBinding StringFormat="{} {0} / {1} files ({2:#0.0} / {3:#0.0}MB)">
+					<Binding Path="TransferredFiles" />
+					<Binding Path="TotalFiles" />
+					<Binding Path="TransferredSize" />
+					<Binding Path="TotalSize" />
+				</MultiBinding>
+			</ui:TextBlock.Text>
+		</ui:TextBlock>
+		<ui:TextBlock Margin="0,5,0,0" Text="{Binding TransferSpeed, StringFormat=[{0:#0.0} Mbit/s]}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Opacity="0.78" />
+		<ui:Button Margin="0,10,0,0" Height="32" Content="Cancel" HorizontalAlignment="Right" />
+		<Grid Margin="0,5,0,0">
+			<ProgressBar Height="32" Value="{Binding Progress, Mode=OneWay}" Grid.Row="0" />
+			<ui:TextBlock Text="{Binding Progress, StringFormat={}{0:#0.0}%}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Opacity="0.78" Grid.Row="0" />
+		</Grid>
 	</StackPanel>
 </Page>

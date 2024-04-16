@@ -22,6 +22,9 @@
 		<DataTemplate DataType="{x:Type vm:SelectTargetViewModel}">
 			<views:SelectTargetPage />
 		</DataTemplate>
+		<DataTemplate DataType="{x:Type vm:TransferViewModel}">
+			<views:TransferContentPage />
+		</DataTemplate>
 	</Window.Resources>
 	<Grid>
 		<Grid.RowDefinitions>

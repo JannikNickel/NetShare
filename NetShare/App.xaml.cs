@@ -21,6 +21,7 @@ namespace NetShare
             services.AddTransient<DropViewModel>();
             services.AddTransient<LoadViewModel>();
             services.AddTransient<SelectTargetViewModel>();
+            services.AddTransient<TransferViewModel>();
             services.AddTransient<SettingsViewModel>();
 
             services.AddSingleton<INavigationService, MainNavService>();
@@ -28,6 +29,8 @@ namespace NetShare
             services.AddSingleton<ISettingsService, PersistentSettingsService>();
             services.AddTransient<ISearchSenderService, UdpSearchSenderService>();
             services.AddTransient<ISearchListenerService, UdpSearchListenerService>();
+            services.AddTransient<IReceiveContentService, TcpReceiveContentService>();
+            services.AddTransient<ISendContentService, TcpSendContentService>();
 
             services.AddSingleton<IWindowService, WindowService>();
             services.AddSingleton<IWindowFactory>(new WindowFactoryFunc(GenerateWindow));

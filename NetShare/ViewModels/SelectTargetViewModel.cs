@@ -50,6 +50,7 @@ namespace NetShare.ViewModels
         public override void OnClose()
         {
             base.OnClose();
+            searchService.TargetsChanged -= UpdateTargets;
             searchService.Stop();
         }
 
@@ -72,7 +73,11 @@ namespace NetShare.ViewModels
             }
 
             TransferViewModel? tvm = navService.NavigateTo<TransferViewModel>();
-            tvm?.BeginTransfer(SelectedTarget, content);
+            (TransferTarget, FileCollection) param = (SelectedTarget, content);
+            if(tvm?.TransferContentCommand.CanExecute(param) == true)
+            {
+                tvm?.TransferContentCommand.Execute(param);
+            }
         }
     }
 }

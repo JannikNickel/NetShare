@@ -1,6 +1,6 @@
 ﻿namespace NetShare.Services
 {
-    public interface ISearchSenderService : IBroadcastSearchService
+    public interface ISearchSenderService : IProcessService
     {
 
     }

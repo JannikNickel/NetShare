@@ -10,14 +10,20 @@ namespace NetShare.Models
     {
         private static readonly char[] dirSeparators = { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 
+        private readonly string rootDir;
         private readonly List<string> inputFiles;
         private readonly List<FileInfo> fileEntries = new List<FileInfo>();
+        private long totalSize = 0;
 
+        public string RootPath => rootDir;
+        public IEnumerable<FileInfo> Entries => fileEntries;
         public int EntryCount => fileEntries.Count;
+        public long TotalSize => totalSize;
 
         public FileCollection(string[] files)
         {
             inputFiles = FilteredInput(files);
+            rootDir = GetRootDir(inputFiles);
         }
 
         private static List<string> FilteredInput(string[] input)
@@ -34,9 +40,27 @@ namespace NetShare.Models
             return res;
         }
 
+        private static string GetRootDir(IEnumerable<string> files)
+        {
+            string? shortest = null;
+            foreach(string file in files)
+            {
+                string? dir = Path.GetDirectoryName(file);
+                if(dir != null)
+                {
+                    shortest ??= dir;
+                    if(dir.Length < shortest.Length && files.All(n => n.StartsWith(dir)))
+                    {
+                        shortest = dir;
+                    }
+                }
+            }
+            return shortest ?? "";
+        }
+
         private static string NormalizePath(string path)
         {
-            return Path.GetFullPath(path).TrimEnd(dirSeparators).ToUpperInvariant();
+            return Path.GetFullPath(path).TrimEnd(dirSeparators);
         }
 
         private static bool IsSubdirectoryOf(string parent, string child)
@@ -63,7 +87,7 @@ namespace NetShare.Models
         {
             await Task.Run(() =>
             {
-                long size = 0;
+                totalSize = 0;
                 fileEntries.Clear();
                 foreach(string input in inputFiles)
                 {
@@ -74,21 +98,21 @@ namespace NetShare.Models
                         {
                             foreach(string file in Directory.EnumerateFiles(input, "", SearchOption.AllDirectories))
                             {
-                                AddFile(file, ref size);
+                                AddFile(file);
                             }
                         }
                         else
                         {
-                            AddFile(input, ref size);
+                            AddFile(input);
                         }
-                        progress?.Report((fileEntries.Count, size / 1024d / 1024d));
+                        progress?.Report((fileEntries.Count, totalSize / 1024d / 1024d));
                     }
                     catch { }
                 }
             });
         }
 
-        private void AddFile(string file, ref long totalSize)
+        private void AddFile(string file)
         {
             try
             {
