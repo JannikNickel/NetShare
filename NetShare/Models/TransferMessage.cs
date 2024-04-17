@@ -17,9 +17,9 @@ namespace NetShare.Models
             RequestTransfer,
             AcceptReceive,
             DeclineReceive,
+            Continue,
             Cancel,
             Complete,
-            Error,
             File
         }
     }

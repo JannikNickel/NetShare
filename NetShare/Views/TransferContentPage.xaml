@@ -28,7 +28,7 @@
 			</ui:TextBlock.Text>
 		</ui:TextBlock>
 		<ui:TextBlock Margin="0,5,0,0" Text="{Binding TransferSpeed, StringFormat=[{0:#0.0} Mbit/s]}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Opacity="0.78" />
-		<ui:Button Margin="0,10,0,0" Height="32" Content="Cancel" HorizontalAlignment="Right" />
+		<ui:Button Margin="0,10,0,0" Height="32" Content="Cancel" HorizontalAlignment="Right" Command="{Binding CancelTransferCommand}" />
 		<Grid Margin="0,5,0,0">
 			<ProgressBar Height="32" Minimum="0" Maximum="1" Value="{Binding Progress, Mode=OneWay}" Grid.Row="0" />
 			<ui:TextBlock

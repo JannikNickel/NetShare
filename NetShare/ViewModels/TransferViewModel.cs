@@ -1,7 +1,6 @@
 ﻿using NetShare.Models;
 using NetShare.Services;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows.Threading;
@@ -14,15 +13,16 @@ namespace NetShare.ViewModels
         private INotificationService notificationService;
         private FileCollection? content;
         private TransferReqInfo reqInfo;
+        private IContentTransferService? transferService;
 
         private string? statusText = "Waiting for connection...";
         private int transferredFiles;
         private double transferredSize;
         private double progress;
-        private long transferSpeed = 123531533;
+        private long transferSpeed;
 
-        public AsyncRelayCommand<(ISendContentService transferService, TransferTarget, FileCollection)> TransferContentCommand { get; init; }
-        public AsyncRelayCommand<(IReceiveContentService, TransferReqInfo)> ReceiveContentCommand { get; init; }
+        public RelayCommand<(ISendContentService transferService, TransferTarget, FileCollection)> TransferContentCommand { get; init; }
+        public RelayCommand<(IReceiveContentService, TransferReqInfo)> ReceiveContentCommand { get; init; }
         public ICommand CancelTransferCommand { get; init; }
 
         public string? StatusText
@@ -30,26 +30,31 @@ namespace NetShare.ViewModels
             get => statusText;
             private set => SetProperty(ref statusText, value);
         }
+
         public int TransferredFiles
         {
             get => transferredFiles;
             private set => SetProperty(ref transferredFiles, value);
         }
+
         public double TransferredSize
         {
-            get => transferredSize / 1024d / 1024d;
-            private set => SetProperty(ref transferredSize, (long)Math.Round(value) * 1024 * 1024);
+            get => transferredSize;
+            private set => SetProperty(ref transferredSize, value);
         }
+
         public double Progress
         {
             get => progress;
             private set => SetProperty(ref progress, Math.Clamp(value, 0.0, 1.0));
         }
+
         public long TransferSpeed
         {
             get => transferSpeed;
             private set => SetProperty(ref transferSpeed, value);
         }
+
         public int TotalFiles => content?.EntryCount ?? reqInfo.TotalFiles;
         public long TotalSize => (content?.TotalSize ?? reqInfo.TotalSize);
         public double TotalSizeMb => TotalSize / 1024d / 1024d;
@@ -59,38 +64,44 @@ namespace NetShare.ViewModels
             this.navService = navService;
             this.notificationService = notificationService;
 
-            TransferContentCommand = new AsyncRelayCommand<(ISendContentService, TransferTarget, FileCollection)>(TransferContent, () => new CancellationTokenSource());
-            ReceiveContentCommand = new AsyncRelayCommand<(IReceiveContentService, TransferReqInfo)>(ReceiveContent, () => new CancellationTokenSource());
-            CancelTransferCommand = new RelayCommand(CancelTransfer, null);//TODO transfer in progress
+            TransferContentCommand = new RelayCommand<(ISendContentService, TransferTarget, FileCollection)>(TransferContent);
+            ReceiveContentCommand = new RelayCommand<(IReceiveContentService, TransferReqInfo)>(ReceiveContent);
+            CancelTransferCommand = new RelayCommand(CancelTransfer, null);
         }
 
-        private async Task TransferContent((ISendContentService?, TransferTarget?, FileCollection?) param, CancellationToken ct)
+        private void TransferContent((ISendContentService?, TransferTarget?, FileCollection?) param)
         {
             if(param.Item1 == null || param.Item2 == null || param.Item3 == null)
             {
                 return;
             }
-
             (ISendContentService transferService, TransferTarget target, FileCollection content) = param;
             this.content = content;
             transferService.SetTransferData(target, content);
-            PrepTransferService(transferService);
+            RegisterTransferService(transferService);
         }
 
-        private async Task ReceiveContent((IReceiveContentService?, TransferReqInfo) param, CancellationToken ct)
+        private void ReceiveContent((IReceiveContentService?, TransferReqInfo) param)
         {
             if(param.Item1 == null)
             {
                 return;
             }
-
             (IReceiveContentService transferService, TransferReqInfo reqInfo) = param;
-            PrepTransferService(transferService);
+            RegisterTransferService(transferService);
             this.reqInfo = reqInfo;
         }
 
-        private void PrepTransferService(IContentTransferService service)
+        private void CancelTransfer()
         {
+            transferService?.CancelTransfer();
+            notificationService.Show("Transfer cancelled!", "", NotificationType.Info);
+            navService.NavigateTo<DropViewModel>();
+        }
+
+        private void RegisterTransferService(IContentTransferService service)
+        {
+            transferService = service;
             service.Error += OnTransferError;
             service.Progress += OnTransferProgress;
             service.Completed += OnTransferCompleted;
@@ -115,17 +126,12 @@ namespace NetShare.ViewModels
         private void OnTransferCompleted()
         {
             StatusText = "Transfer completed...";
-            notificationService.Show("Success", "Transfer complete!", NotificationType.Success, TimeSpan.FromSeconds(120));
+            notificationService.Show("Success", "Transfer complete!", NotificationType.Success, TimeSpan.FromSeconds(10));
             Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
             Task.Delay(3000).ContinueWith(_ =>
             {
                 dispatcher.Invoke(() => navService.NavigateTo<DropViewModel>());
             });
-        }
-
-        private void CancelTransfer()
-        {
-
         }
     }
 }

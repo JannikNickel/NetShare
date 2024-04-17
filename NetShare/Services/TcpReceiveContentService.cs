@@ -14,6 +14,7 @@ namespace NetShare.Services
         private bool isRunning;
         private TcpListener? server;
         private Dispatcher dispatcher;
+        private DispatcherLimiter? progressDispatcher;
         private CancellationTokenSource? cts;
         private Func<TransferReqInfo, bool>? confirmTransferCallback = null;
 
@@ -48,6 +49,18 @@ namespace NetShare.Services
             cts?.Cancel();
             cts?.Dispose();
             server?.Dispose();
+            progressDispatcher?.Dispose();
+        }
+
+        public void SetConfirmTransferCallback(Func<TransferReqInfo, bool>? callback)
+        {
+            confirmTransferCallback = callback;
+        }
+
+        public void CancelTransfer()
+        {
+            cts?.Cancel();
+            Stop();
         }
 
         private void Restart()
@@ -66,10 +79,11 @@ namespace NetShare.Services
             server.Start();
             try
             {
+                progressDispatcher = new DispatcherLimiter(dispatcher, IContentTransferService.progressUpdateRate);
                 using(TcpClient client = await server.AcceptTcpClientAsync(ct))
                 {
                     string? downloadPath = settingsService.CurrentSettings?.DownloadPath ?? null;
-                    if(downloadPath == null || !ValidatePath(ref downloadPath))
+                    if(downloadPath == null || !Settings.PrepDownloadPath(ref downloadPath))
                     {
                         HandleError($"Can't write to download path ({downloadPath})!");
                         return;
@@ -126,12 +140,16 @@ namespace NetShare.Services
                             received += await protocol.ReadData(path, msg, subProgress, ct);
                             completed++;
                             ReportProgress(completed, received, protocol.ReceiveRate);
+
+                            await protocol.SendAsync(new TransferMessage(TransferMessage.Type.Continue));
                         }
                         else
                         {
-                            if(msg.type == TransferMessage.Type.Cancel || msg.type == TransferMessage.Type.Error)
+                            ReportProgress(completed, received, 0, true);
+
+                            if(msg.type == TransferMessage.Type.Cancel)
                             {
-                                HandleError(msg.type == TransferMessage.Type.Cancel ? "Transfer cancelled by sender!" : "Error occurred at sender!");
+                                HandleError("Transfer cancelled by sender!");
                                 return;
                             }
                             else if(msg.type == TransferMessage.Type.Complete)
@@ -149,6 +167,8 @@ namespace NetShare.Services
                                 await dispatcher.InvokeAsync(() => Completed?.Invoke(), DispatcherPriority.Send);
                                 break;
                             }
+
+                            HandleError($"Unexpected message ({msg.type})");
                         }
                     }
                     while(msg.type != TransferMessage.Type.None);
@@ -159,35 +179,18 @@ namespace NetShare.Services
             {
                 if(e is not OperationCanceledException)
                 {
-                    HandleError($"Could not accept connection ({e.Message})!");
+                    HandleError($"Error ({e.Message})!");
                 }
                 return;
             }
         }
 
-        private static bool ValidatePath(ref string path)
+        private void ReportProgress(int completedFiles, long completedSize, long rate, bool now = false)
         {
-            try
-            {
-                path = Path.GetFullPath(path);
-                if(!Directory.Exists(path))
-                {
-                    Directory.CreateDirectory(path);
-                }
-                using FileStream fs = File.Create(Path.Combine(path, Path.GetRandomFileName()), 1, FileOptions.DeleteOnClose);
-                fs.Dispose();
-                return true;
-            }
-            catch { }
-            return false;
-        }
-
-        private void ReportProgress(int completedFiles, long completedSize, long rate)
-        {
-            dispatcher.Invoke(() =>
+            progressDispatcher?.Invoke(() =>
             {
                 Progress?.Invoke(new TransferProgressEventArgs(completedFiles, completedSize, rate));
-            });
+            }, now);
         }
 
         private void HandleError(string error)
@@ -197,11 +200,6 @@ namespace NetShare.Services
                 Stop();
                 Error?.Invoke(error);
             });
-        }
-
-        public void SetConfirmTransferCallback(Func<TransferReqInfo, bool>? callback)
-        {
-            confirmTransferCallback = callback;
         }
     }
 }

@@ -37,6 +37,23 @@ namespace NetShare.Models
             return valid;
         }
 
+        public static bool PrepDownloadPath(ref string path)
+        {
+            try
+            {
+                path = Path.GetFullPath(path);
+                if(!Directory.Exists(path))
+                {
+                    Directory.CreateDirectory(path);
+                }
+                using FileStream fs = File.Create(Path.Combine(path, Path.GetRandomFileName()), 1, FileOptions.DeleteOnClose);
+                fs.Dispose();
+                return true;
+            }
+            catch { }
+            return false;
+        }
+
         public static bool IsValidPort(int port)
         {
             return port >= 0 && port <= 65535;

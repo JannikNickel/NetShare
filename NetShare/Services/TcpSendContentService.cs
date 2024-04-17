@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using System.Net.Sockets;
 using System.Threading;
+using System.Windows;
 using System.Windows.Threading;
 
 namespace NetShare.Services
@@ -13,6 +14,7 @@ namespace NetShare.Services
         private bool isRunning;
         private TcpClient? client;
         private Dispatcher dispatcher;
+        private DispatcherLimiter? progressDispatcher;
         private CancellationTokenSource? cts;
 
         private TransferTarget? target;
@@ -25,7 +27,7 @@ namespace NetShare.Services
         public TcpSendContentService(ISettingsService settingsService)
         {
             this.settingsService = settingsService;
-            this.dispatcher = Dispatcher.CurrentDispatcher;
+            dispatcher = Dispatcher.CurrentDispatcher;
         }
 
         public void SetTransferData(TransferTarget target, FileCollection content)
@@ -57,12 +59,20 @@ namespace NetShare.Services
             cts?.Cancel();
             cts?.Dispose();
             client?.Dispose();
+            progressDispatcher?.Dispose();
+        }
+
+        public void CancelTransfer()
+        {
+            cts?.Cancel();
+            Stop();
         }
 
         private async void BeginTransfer(TransferTarget target, FileCollection content, CancellationToken ct)
         {
             try
             {
+                progressDispatcher = new DispatcherLimiter(dispatcher, IContentTransferService.progressUpdateRate);
                 using(client = new TcpClient())
                 {
                     await client.ConnectAsync(target.Ip, settingsService.CurrentSettings?.TransferPort ?? 0, ct);
@@ -95,7 +105,14 @@ namespace NetShare.Services
                         completed++;
                         completedSize += fileSize;
                         ReportProgress(completed, completedSize, protocol.TransferRate);
+
+                        msg = await protocol.ReadAsync(ct);
+                        if(msg.type != TransferMessage.Type.Continue && msg.type != TransferMessage.Type.Cancel)
+                        {
+                            HandleError(msg.type == TransferMessage.Type.Cancel ? "Transfer cancelled by target" : $"Unexpected response ({msg.type})");
+                        }
                     }
+                    ReportProgress(completed, completedSize, 0, true);
 
                     msg = new TransferMessage(TransferMessage.Type.Complete);
                     await protocol.SendAsync(msg, null, null, ct);
@@ -119,18 +136,18 @@ namespace NetShare.Services
             {
                 if(e is not OperationCanceledException)
                 {
-                    HandleError($"Could not establish connection ({e.Message})!");
+                    HandleError($"Error ({e.Message})!");
                 }
                 return;
             }
         }
 
-        private void ReportProgress(int completedFiles, long completedSize, long rate)
+        private void ReportProgress(int completedFiles, long completedSize, long rate, bool now = false)
         {
-            dispatcher.Invoke(() =>
+            progressDispatcher?.Invoke(() =>
             {
                 Progress?.Invoke(new TransferProgressEventArgs(completedFiles, completedSize, rate));
-            });
+            }, now);
         }
 
         private void HandleError(string error)

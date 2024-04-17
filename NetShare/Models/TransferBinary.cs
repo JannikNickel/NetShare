@@ -26,7 +26,7 @@ namespace NetShare.Models
             stream.Write(buffer);
         }
 
-        public static unsafe void WriteString(NetworkStream stream, string value)
+        public static unsafe void WriteString(Stream stream, string value)
         {
             int bytes = value.Length * sizeof(char);
             fixed(char* ptr = value)
