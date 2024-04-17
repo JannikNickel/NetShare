@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using System.Text;
+using System.Text.Json;
 
 namespace NetShare.Models
 {
@@ -19,6 +21,24 @@ namespace NetShare.Models
             Complete,
             Error,
             File
+        }
+    }
+
+    public record struct TransferReqInfo(string Sender, int TotalFiles, long TotalSize)
+    {
+        public static string Serialize(TransferReqInfo info)
+        {
+            return JsonSerializer.Serialize(info);
+        }
+
+        public static TransferReqInfo? Deserialize(string? text)
+        {
+            try
+            {
+                return JsonSerializer.Deserialize<TransferReqInfo>(text ?? "");
+            }
+            catch { }
+            return null;
         }
     }
 }

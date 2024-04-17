@@ -7,8 +7,8 @@ namespace NetShare.Services
 {
     public interface IReceiveContentService : IContentTransferService
     {
-        event Action? BeginTransfer;
+        event Action<TransferReqInfo>? BeginTransfer;
 
-        void SetConfirmTransferCallback(Func<string, bool>? callback);
+        void SetConfirmTransferCallback(Func<TransferReqInfo, bool>? callback);
     }
 }

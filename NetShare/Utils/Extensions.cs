@@ -16,15 +16,6 @@ namespace NetShare
             return true;
         }
 
-        public static IEnumerable<(int, T)> Enumerate<T>(this IEnumerable<T> enumerable)
-        {
-            int i = 0;
-            foreach(T item in enumerable)
-            {
-                yield return (i, item);
-            }
-        }
-
         public static T? GetService<T>(this IServiceProvider? serviceProvider) where T : class
         {
             return serviceProvider?.GetService(typeof(T)) as T;

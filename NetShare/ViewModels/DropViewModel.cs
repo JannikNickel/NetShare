@@ -54,9 +54,9 @@ namespace NetShare.ViewModels
             }
         }
 
-        private bool ConfirmTransfer(string sender)
+        private bool ConfirmTransfer(TransferReqInfo info)
         {
-            return notificationService.ShowDialog("Receive content?", $"Do you want to receive files from {sender}?");
+            return notificationService.ShowDialog("Receive content?", $"From:\t{info.Sender}\nFiles:\t{info.TotalFiles}\nSize:\t{info.TotalSize / 1024d / 1024d:0.00}MB");
         }
 
         private void OnReceiveError(string error)
@@ -65,7 +65,7 @@ namespace NetShare.ViewModels
             receiveService?.Start();
         }
 
-        private void OnBeginTransfer()
+        private void OnBeginTransfer(TransferReqInfo info)
         {
             IReceiveContentService? receiveService = this.receiveService;
             this.receiveService = null;
@@ -75,9 +75,10 @@ namespace NetShare.ViewModels
                 receiveService.BeginTransfer -= OnBeginTransfer;
 
                 TransferViewModel? tvm = navService.NavigateTo<TransferViewModel>();
-                if(tvm != null && tvm.ReceiveContentCommand.CanExecute(receiveService))
+                (IReceiveContentService, TransferReqInfo) param = (receiveService, info);
+                if(tvm != null && tvm.ReceiveContentCommand.CanExecute(param))
                 {
-                    tvm.ReceiveContentCommand.Execute(receiveService);
+                    tvm.ReceiveContentCommand.Execute(param);
                 }
             }
         }

@@ -1,13 +1,9 @@
 ﻿using NetShare.Models;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Threading;
 
 namespace NetShare.Services
@@ -19,11 +15,12 @@ namespace NetShare.Services
         private TcpListener? server;
         private Dispatcher dispatcher;
         private CancellationTokenSource? cts;
-        private Func<string, bool>? confirmTransferCallback = null;
+        private Func<TransferReqInfo, bool>? confirmTransferCallback = null;
 
         public event Action<string>? Error;
+        public event Action<TransferProgressEventArgs>? Progress;
         public event Action? Completed;
-        public event Action? BeginTransfer;
+        public event Action<TransferReqInfo>? BeginTransfer;
 
         public TcpReceiveContentService(ISettingsService settingsService)
         {
@@ -78,7 +75,7 @@ namespace NetShare.Services
                         return;
                     }
 
-                    TransferProtocol protocol = new TransferProtocol(client);
+                    using TransferProtocol protocol = new TransferProtocol(client);
 
                     TransferMessage msg;
                     msg = await protocol.ReadAsync(ct);
@@ -87,13 +84,19 @@ namespace NetShare.Services
                         HandleError($"Unexpected initial message! Expected transfer request!");
                         return;
                     }
+                    TransferReqInfo? reqInfo = TransferReqInfo.Deserialize(msg.path);
+                    if(reqInfo == null)
+                    {
+                        HandleError($"Missing request info!");
+                        return;
+                    }
 
                     TransferMessage.Type reqAnswer = TransferMessage.Type.AcceptReceive;
                     await dispatcher.InvokeAsync(() =>
                     {
                         if(confirmTransferCallback != null)
                         {
-                            reqAnswer = confirmTransferCallback.Invoke(msg.path ?? "") ? TransferMessage.Type.AcceptReceive : TransferMessage.Type.DeclineReceive;
+                            reqAnswer = confirmTransferCallback.Invoke(reqInfo.Value) ? TransferMessage.Type.AcceptReceive : TransferMessage.Type.DeclineReceive;
                         }
                     }, DispatcherPriority.Send, ct);
                     msg = new TransferMessage(reqAnswer);
@@ -104,8 +107,11 @@ namespace NetShare.Services
                         return;
                     }
 
-                    await dispatcher.InvokeAsync(() => BeginTransfer?.Invoke(), DispatcherPriority.Send);
+                    await dispatcher.InvokeAsync(() => BeginTransfer?.Invoke(reqInfo.Value), DispatcherPriority.Send);
 
+                    int completed = 0;
+                    long received = 0;
+                    Progress<long> subProgress = new Progress<long>(subReceived => ReportProgress(completed, received + subReceived, protocol.ReceiveRate));
                     do
                     {
                         msg = await protocol.ReadAsync(ct);
@@ -117,7 +123,9 @@ namespace NetShare.Services
                             {
                                 Directory.CreateDirectory(dir);
                             }
-                            await protocol.ReadData(path, msg);
+                            received += await protocol.ReadData(path, msg, subProgress, ct);
+                            completed++;
+                            ReportProgress(completed, received, protocol.ReceiveRate);
                         }
                         else
                         {
@@ -128,13 +136,24 @@ namespace NetShare.Services
                             }
                             else if(msg.type == TransferMessage.Type.Complete)
                             {
-                                ReportCompleted();
+                                NetworkStream stream = client.GetStream();
+                                stream.Flush();
+                                Memory<byte> buffer = new byte[128];
+                                while(await stream.ReadAsync(buffer, ct) != 0)
+                                {
+
+                                }
+                                client.Client.Shutdown(SocketShutdown.Send);
+                                client.Close();
+
+                                await dispatcher.InvokeAsync(() => Completed?.Invoke(), DispatcherPriority.Send);
                                 break;
                             }
                         }
                     }
                     while(msg.type != TransferMessage.Type.None);
                 }
+                Stop();
             }
             catch(Exception e)
             {
@@ -163,6 +182,14 @@ namespace NetShare.Services
             return false;
         }
 
+        private void ReportProgress(int completedFiles, long completedSize, long rate)
+        {
+            dispatcher.Invoke(() =>
+            {
+                Progress?.Invoke(new TransferProgressEventArgs(completedFiles, completedSize, rate));
+            });
+        }
+
         private void HandleError(string error)
         {
             dispatcher.Invoke(() =>
@@ -172,16 +199,7 @@ namespace NetShare.Services
             });
         }
 
-        private void ReportCompleted()
-        {
-            dispatcher.Invoke(() =>
-            {
-                Stop();
-                Completed?.Invoke();
-            });
-        }
-
-        public void SetConfirmTransferCallback(Func<string, bool>? callback)
+        public void SetConfirmTransferCallback(Func<TransferReqInfo, bool>? callback)
         {
             confirmTransferCallback = callback;
         }
