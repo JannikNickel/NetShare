@@ -16,7 +16,7 @@ namespace NetShare.Models
         {
             Settings settings = new Settings();
             settings.DisplayName = Environment.MachineName;
-            settings.DownloadPath = Win32.SHGetKnownFolderPath(Win32.DownloadsFolderGuid, 0);
+            settings.DownloadPath = Path.Combine(Win32.SHGetKnownFolderPath(Win32.DownloadsFolderGuid, 0), "NetShareDownloads");
             settings.BroadcastPort = 37335;
             settings.TransferPort = 37336;
             return settings;

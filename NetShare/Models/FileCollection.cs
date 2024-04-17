@@ -99,13 +99,14 @@ namespace NetShare.Models
                             foreach(string file in Directory.EnumerateFiles(input, "", SearchOption.AllDirectories))
                             {
                                 AddFile(file);
+                                progress?.Report((fileEntries.Count, totalSize / 1024d / 1024d));
                             }
                         }
                         else
                         {
                             AddFile(input);
+                            progress?.Report((fileEntries.Count, totalSize / 1024d / 1024d));
                         }
-                        progress?.Report((fileEntries.Count, totalSize / 1024d / 1024d));
                     }
                     catch { }
                 }

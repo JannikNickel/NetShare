@@ -1,6 +1,7 @@
 ﻿using NetShare.Models;
 using NetShare.Services;
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
@@ -44,13 +45,18 @@ namespace NetShare.ViewModels
             }
 
             Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+            Stopwatch progressCooldown = Stopwatch.StartNew();
             Progress<(int files, double size)> progress = new Progress<(int files, double size)>(p =>
             {
-                dispatcher.Invoke(() =>
+                if(progressCooldown.ElapsedMilliseconds > 50)
                 {
-                    FileCount = p.files;
-                    FileSize = p.size;
-                });
+                    dispatcher.Invoke(() =>
+                    {
+                        FileCount = p.files;
+                        FileSize = p.size;
+                    });
+                    progressCooldown.Restart();
+                }
             });
 
             await fileCollection.LoadFilesAsync(progress);
