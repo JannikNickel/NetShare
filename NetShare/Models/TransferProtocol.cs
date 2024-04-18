@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Buffers.Binary;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,8 +9,7 @@ namespace NetShare.Models
     {
         private const int bufferSize = 1024 * 1024;
 
-        private readonly TcpClient client;
-        private readonly NetworkStream stream;
+        private readonly Stream stream;
         private byte[] dataWriteBuffer = new byte[bufferSize];
         private byte[] dataReadBuffer = new byte[bufferSize];
 
@@ -28,11 +22,9 @@ namespace NetShare.Models
         public long TransferRate => transferRate;
         public long ReceiveRate => receiveRate;
 
-        public TransferProtocol(TcpClient client)
+        public TransferProtocol(Stream stream)
         {
-            this.client = client;
-            stream = client.GetStream();
-
+            this.stream = stream;
             rateTimer = new Timer(UpdateTransferRates, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(250));
         }
 
@@ -117,14 +109,15 @@ namespace NetShare.Models
 
         public async Task<long> ReadData(string destPath, TransferMessage msg, IProgress<long>? progress = null, CancellationToken? ct = null)
         {
+            ct ??= CancellationToken.None;
+
             using(FileStream fs = new FileStream(destPath, FileMode.Create))
             {
-                NetworkStream stream = client.GetStream();
                 byte[] buffer = dataReadBuffer;
                 long dataSize = msg.dataSize;
                 while(dataSize > 0)
                 {
-                    int read = await stream.ReadAsync(buffer, 0, Math.Min((int)Math.Min(dataSize, int.MaxValue), buffer.Length));
+                    int read = await stream.ReadAsync(buffer, 0, Math.Min((int)Math.Min(dataSize, int.MaxValue), buffer.Length), ct.Value);
                     dataSize -= read;
                     await fs.WriteAsync(buffer, 0, read);
                     Interlocked.Add(ref receiveFrame, read);

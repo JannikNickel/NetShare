@@ -4,7 +4,7 @@ using System.Windows.Threading;
 
 namespace NetShare
 {
-    public class DispatcherLimiter : IDisposable
+    public sealed class DispatcherLimiter : IDisposable
     {
         private readonly Dispatcher dispatcher;
         private readonly Timer timer;

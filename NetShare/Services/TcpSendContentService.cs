@@ -3,17 +3,17 @@ using System;
 using System.IO;
 using System.Net.Sockets;
 using System.Threading;
-using System.Windows;
 using System.Windows.Threading;
 
 namespace NetShare.Services
 {
-    public class TcpSendContentService : ISendContentService
+    public class TcpSendContentService(ISettingsService settingsService) : ISendContentService
     {
-        private ISettingsService settingsService;
+        private readonly ISettingsService settingsService = settingsService;
+        private readonly Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+
         private bool isRunning;
         private TcpClient? client;
-        private Dispatcher dispatcher;
         private DispatcherLimiter? progressDispatcher;
         private CancellationTokenSource? cts;
 
@@ -23,12 +23,6 @@ namespace NetShare.Services
         public event Action<string>? Error;
         public event Action<TransferProgressEventArgs>? Progress;
         public event Action? Completed;
-
-        public TcpSendContentService(ISettingsService settingsService)
-        {
-            this.settingsService = settingsService;
-            dispatcher = Dispatcher.CurrentDispatcher;
-        }
 
         public void SetTransferData(TransferTarget target, FileCollection content)
         {
@@ -64,7 +58,6 @@ namespace NetShare.Services
 
         public void CancelTransfer()
         {
-            cts?.Cancel();
             Stop();
         }
 
@@ -76,10 +69,10 @@ namespace NetShare.Services
                 using(client = new TcpClient())
                 {
                     await client.ConnectAsync(target.Ip, settingsService.CurrentSettings?.TransferPort ?? 0, ct);
+                    using TransferProtocol protocol = new TransferProtocol(client.GetStream());
 
-                    using TransferProtocol protocol = new TransferProtocol(client);
-
-                    TransferReqInfo reqInfo = new TransferReqInfo($"{settingsService.CurrentSettings?.DisplayName ?? "Unknown"} ({TransferTarget.GetLocalIp()?.ToString()})", content.EntryCount, content.TotalSize);
+                    string senderName = $"{settingsService.CurrentSettings?.DisplayName ?? "Unknown"} ({TransferTarget.GetLocalIp()?.ToString()})";
+                    TransferReqInfo reqInfo = new TransferReqInfo(senderName, content.EntryCount, content.TotalSize);
                     TransferMessage msg = new TransferMessage(TransferMessage.Type.RequestTransfer, TransferReqInfo.Serialize(reqInfo));
                     await protocol.SendAsync(msg);
 
@@ -102,12 +95,11 @@ namespace NetShare.Services
                             : file.FullName[(Path.GetPathRoot(file.FullName)?.Length ?? 0)..];
                         msg = new TransferMessage(TransferMessage.Type.File, relPath, fileSize);
                         await protocol.SendAsync(msg, file, subProgress, ct);
-                        completed++;
                         completedSize += fileSize;
-                        ReportProgress(completed, completedSize, protocol.TransferRate);
+                        ReportProgress(++completed, completedSize, protocol.TransferRate);
 
                         msg = await protocol.ReadAsync(ct);
-                        if(msg.type != TransferMessage.Type.Continue && msg.type != TransferMessage.Type.Cancel)
+                        if(msg.type != TransferMessage.Type.Continue)
                         {
                             HandleError(msg.type == TransferMessage.Type.Cancel ? "Transfer cancelled by target" : $"Unexpected response ({msg.type})");
                         }
@@ -123,12 +115,11 @@ namespace NetShare.Services
                     Memory<byte> buffer = new byte[128];
                     while(await stream.ReadAsync(buffer, ct) != 0)
                     {
-
+                        continue;
                     }
                     client.Close();
 
                     await dispatcher.InvokeAsync(() => Completed?.Invoke(), DispatcherPriority.Send);
-
                     Stop();
                 }
             }

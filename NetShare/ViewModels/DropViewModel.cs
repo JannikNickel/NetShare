@@ -1,7 +1,6 @@
 ﻿using NetShare.Models;
 using NetShare.Services;
-using System;
-using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace NetShare.ViewModels
@@ -54,9 +53,9 @@ namespace NetShare.ViewModels
             }
         }
 
-        private bool ConfirmTransfer(TransferReqInfo info)
+        private async Task<bool> ConfirmTransfer(TransferReqInfo info)
         {
-            return notificationService.ShowDialog("Receive content?", $"From:\t{info.Sender}\nFiles:\t{info.TotalFiles}\nSize:\t{info.TotalSize / 1024d / 1024d:0.00}MB");
+            return await notificationService.ShowDialog("Receive content?", $"From:\t{info.Sender}\nFiles:\t{info.TotalFiles}\nSize:\t{info.TotalSize / 1024d / 1024d:0.00}MB");
         }
 
         private void OnReceiveError(string error)

@@ -14,8 +14,8 @@ namespace NetShare.ViewModels
         private readonly ISearchListenerService searchService;
         private readonly ISendContentService sendContentService;
 
+        private bool noTargets;
         private FileCollection? content;
-        private bool noTargets = false;
         private ObservableCollection<TransferTarget>? targets;
         private TransferTarget? selectedTarget;
 

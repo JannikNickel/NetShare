@@ -4,30 +4,26 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Threading;
 
 namespace NetShare.Services
 {
-    public class TcpReceiveContentService : IReceiveContentService
+    public class TcpReceiveContentService(ISettingsService settingsService) : IReceiveContentService
     {
-        private readonly ISettingsService settingsService;
+        private readonly ISettingsService settingsService = settingsService;
+        private readonly Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+
         private bool isRunning;
         private TcpListener? server;
-        private Dispatcher dispatcher;
         private DispatcherLimiter? progressDispatcher;
         private CancellationTokenSource? cts;
-        private Func<TransferReqInfo, bool>? confirmTransferCallback = null;
+        private Func<TransferReqInfo, Task<bool>>? confirmTransferCallback = null;
 
         public event Action<string>? Error;
         public event Action<TransferProgressEventArgs>? Progress;
         public event Action? Completed;
         public event Action<TransferReqInfo>? BeginTransfer;
-
-        public TcpReceiveContentService(ISettingsService settingsService)
-        {
-            this.settingsService = settingsService;
-            this.dispatcher = Dispatcher.CurrentDispatcher;
-        }
 
         public void Start()
         {
@@ -52,14 +48,13 @@ namespace NetShare.Services
             progressDispatcher?.Dispose();
         }
 
-        public void SetConfirmTransferCallback(Func<TransferReqInfo, bool>? callback)
+        public void SetConfirmTransferCallback(Func<TransferReqInfo, Task<bool>>? callback)
         {
             confirmTransferCallback = callback;
         }
 
         public void CancelTransfer()
         {
-            cts?.Cancel();
             Stop();
         }
 
@@ -82,6 +77,8 @@ namespace NetShare.Services
                 progressDispatcher = new DispatcherLimiter(dispatcher, IContentTransferService.progressUpdateRate);
                 using(TcpClient client = await server.AcceptTcpClientAsync(ct))
                 {
+                    using TransferProtocol protocol = new TransferProtocol(client.GetStream());
+
                     string? downloadPath = settingsService.CurrentSettings?.DownloadPath ?? null;
                     if(downloadPath == null || !Settings.PrepDownloadPath(ref downloadPath))
                     {
@@ -89,10 +86,7 @@ namespace NetShare.Services
                         return;
                     }
 
-                    using TransferProtocol protocol = new TransferProtocol(client);
-
-                    TransferMessage msg;
-                    msg = await protocol.ReadAsync(ct);
+                    TransferMessage msg = await protocol.ReadAsync(ct);
                     if(msg.type != TransferMessage.Type.RequestTransfer)
                     {
                         HandleError($"Unexpected initial message! Expected transfer request!");
@@ -106,11 +100,11 @@ namespace NetShare.Services
                     }
 
                     TransferMessage.Type reqAnswer = TransferMessage.Type.AcceptReceive;
-                    await dispatcher.InvokeAsync(() =>
+                    await dispatcher.InvokeAsync(async () =>
                     {
                         if(confirmTransferCallback != null)
                         {
-                            reqAnswer = confirmTransferCallback.Invoke(reqInfo.Value) ? TransferMessage.Type.AcceptReceive : TransferMessage.Type.DeclineReceive;
+                            reqAnswer = await confirmTransferCallback.Invoke(reqInfo.Value) ? TransferMessage.Type.AcceptReceive : TransferMessage.Type.DeclineReceive;
                         }
                     }, DispatcherPriority.Send, ct);
                     msg = new TransferMessage(reqAnswer);
@@ -159,7 +153,7 @@ namespace NetShare.Services
                                 Memory<byte> buffer = new byte[128];
                                 while(await stream.ReadAsync(buffer, ct) != 0)
                                 {
-
+                                    continue;
                                 }
                                 client.Client.Shutdown(SocketShutdown.Send);
                                 client.Close();
@@ -169,6 +163,7 @@ namespace NetShare.Services
                             }
 
                             HandleError($"Unexpected message ({msg.type})");
+                            break;
                         }
                     }
                     while(msg.type != TransferMessage.Type.None);

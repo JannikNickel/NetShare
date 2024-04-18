@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace NetShare.ViewModels
+﻿namespace NetShare.ViewModels
 {
     public interface IView
     {

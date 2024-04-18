@@ -1,6 +1,5 @@
 ﻿using NetShare.Models;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace NetShare.Services
@@ -9,6 +8,6 @@ namespace NetShare.Services
     {
         event Action<TransferReqInfo>? BeginTransfer;
 
-        void SetConfirmTransferCallback(Func<TransferReqInfo, bool>? callback);
+        void SetConfirmTransferCallback(Func<TransferReqInfo, Task<bool>>? callback);
     }
 }

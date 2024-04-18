@@ -28,7 +28,6 @@ namespace NetShare.Services
         public void SetSettings(Settings? settings, bool save)
         {
             CurrentSettings = settings;
-
             if(save && settings != null)
             {
                 SaveSettings(settings);

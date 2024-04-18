@@ -10,11 +10,11 @@ namespace NetShare.ViewModels
 {
     public class LoadViewModel : ViewModelBase
     {
+        private readonly INavigationService navService;
+        private readonly INotificationService notificationService;
+
         private int fileCount;
         private double fileSize;
-
-        private INavigationService navService;
-        private INotificationService notificationService;
 
         public AsyncRelayCommand<FileCollection> LoadContentCommand { get; init; }
 

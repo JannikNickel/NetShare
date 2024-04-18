@@ -26,7 +26,7 @@ namespace NetShare.ViewModels
 
         public virtual void OnClose()
         {
-            
+
         }
     }
 }

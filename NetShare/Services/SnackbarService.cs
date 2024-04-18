@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Windows.Controls;
 using Wpf.Ui.Controls;
 
@@ -43,7 +44,7 @@ namespace NetShare.Services
             snackbar.Show();
         }
 
-        public bool ShowDialog(string title, string message)
+        public async Task<bool> ShowDialog(string title, string message)
         {
             MessageBox mb = new MessageBox()
             {
@@ -52,7 +53,8 @@ namespace NetShare.Services
                 PrimaryButtonText = "Yes",
                 CloseButtonText = "No"
             };
-            return mb.ShowDialogAsync().ConfigureAwait(false).GetAwaiter().GetResult() == MessageBoxResult.Primary;
+            MessageBoxResult res = await mb.ShowDialogAsync();
+            return res == MessageBoxResult.Primary;
         }
     }
 }

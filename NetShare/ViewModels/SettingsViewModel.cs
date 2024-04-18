@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using NetShare.Models;
+using NetShare.Services;
+using System;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
-using Microsoft.Win32;
-using NetShare.Services;
-using NetShare.Models;
 
 namespace NetShare.ViewModels
 {

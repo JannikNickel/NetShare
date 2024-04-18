@@ -1,14 +1,10 @@
 ﻿using NetShare.Models;
 using System;
+using System.Net;
 using System.Net.Sockets;
-using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Text.Json;
-using System.Net;
-using NetShare.Converters;
-using System.Windows.Threading;
-using System.Collections.Generic;
 
 namespace NetShare.Services
 {
@@ -45,7 +41,6 @@ namespace NetShare.Services
             {
                 return;
             }
-
             TransferTarget? target = TransferTarget.ForCurrentUser();
             if(target != null)
             {

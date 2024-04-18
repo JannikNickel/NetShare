@@ -1,6 +1,4 @@
 ﻿using NetShare.Services;
-using NetShare.Views;
-using System;
 using System.Windows.Input;
 
 namespace NetShare.ViewModels

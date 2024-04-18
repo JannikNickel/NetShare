@@ -1,8 +1,4 @@
-﻿using NetShare.Models;
-using System;
-using System.Collections.Generic;
-
-namespace NetShare.Services
+﻿namespace NetShare.Services
 {
     public interface IProcessService
     {

@@ -1,12 +1,12 @@
 ﻿using NetShare.Models;
 using System;
-using System.Net.Sockets;
-using System.Threading;
-using System.Text.Json;
-using System.Net;
-using System.Windows.Threading;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
+using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Threading;
 
 namespace NetShare.Services
 {
@@ -16,7 +16,7 @@ namespace NetShare.Services
         private Dispatcher? dispatcher;
         private UdpClient? client;
         private Timer? decayTimer;
-        private SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
         private readonly List<TransferTarget> targets = new List<TransferTarget>();
         private readonly Dictionary<IPAddress, DateTime> answerTimes = new Dictionary<IPAddress, DateTime>();
 
@@ -24,12 +24,10 @@ namespace NetShare.Services
 
         public void Start()
         {
-            if(isRunning)
+            if(!isRunning.SetIfChanged(true))
             {
                 return;
             }
-            isRunning = true;
-
             dispatcher = Dispatcher.CurrentDispatcher;
             client = new UdpClient(port);
             decayTimer = new Timer(_ => DecayEntries(), null, TimeSpan.Zero, TimeSpan.FromSeconds(interval));
@@ -38,12 +36,10 @@ namespace NetShare.Services
 
         public void Stop()
         {
-            if(!isRunning)
+            if(!isRunning.SetIfChanged(false))
             {
                 return;
             }
-            isRunning = false;
-
             client?.Dispose();
             decayTimer?.Dispose();
         }
@@ -72,7 +68,6 @@ namespace NetShare.Services
                                 targets.Add(target);
                             }
                             answerTimes[target.Ip] = DateTime.UtcNow;
-
                             await DispatchTargets();
                         }
                         finally

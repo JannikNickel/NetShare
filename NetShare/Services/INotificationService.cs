@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Windows.Controls;
 
 namespace NetShare.Services
@@ -9,7 +10,7 @@ namespace NetShare.Services
 
         void SetPresenter(ContentPresenter? presenter);
         void Show(string title, string message, NotificationType type, TimeSpan? duration = null);
-        bool ShowDialog(string title, string message);
+        Task<bool> ShowDialog(string title, string message);
     }
 
     public enum NotificationType

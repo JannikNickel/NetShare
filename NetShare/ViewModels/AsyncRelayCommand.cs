@@ -1,7 +1,7 @@
-﻿using System.Windows.Input;
-using System.Threading.Tasks;
-using System;
+﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Input;
 
 namespace NetShare.ViewModels
 {
@@ -33,13 +33,13 @@ namespace NetShare.ViewModels
 
             try
             {
-                if (execute != null)
+                if(execute != null)
                 {
-                    await execute.Invoke((T?)parameter, cts?.Token ?? CancellationToken.None);
+                    await execute.Invoke((T?)parameter, cts.Token);
                 }
             }
-            catch (OperationCanceledException) { }
-            catch (Exception)
+            catch(OperationCanceledException) { }
+            catch(Exception)
             {
                 throw;
             }

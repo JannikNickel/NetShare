@@ -9,8 +9,8 @@ namespace NetShare.ViewModels
 {
     public class TransferViewModel : ViewModelBase
     {
-        private INavigationService navService;
-        private INotificationService notificationService;
+        private readonly INavigationService navService;
+        private readonly INotificationService notificationService;
         private FileCollection? content;
         private TransferReqInfo reqInfo;
         private IContentTransferService? transferService;
@@ -88,8 +88,8 @@ namespace NetShare.ViewModels
                 return;
             }
             (IReceiveContentService transferService, TransferReqInfo reqInfo) = param;
-            RegisterTransferService(transferService);
             this.reqInfo = reqInfo;
+            RegisterTransferService(transferService);
         }
 
         private void CancelTransfer()
