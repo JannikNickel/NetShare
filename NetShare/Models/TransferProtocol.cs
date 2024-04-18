@@ -71,40 +71,37 @@ namespace NetShare.Models
             ct ??= CancellationToken.None;
 
             Memory<byte> buffer = new byte[sizeof(int)];
-            int read;
-            int totalRead = 0;
-            do
-            {
-                read = await stream.ReadAsync(buffer[totalRead..], ct.Value);
-                totalRead += read;
-            }
-            while(read != 0 && totalRead < sizeof(int));
-            if(totalRead == 0)
+            if(await ReadBuffer(buffer, ct.Value) != buffer.Length)
             {
                 return default;
             }
 
             int size = TransferBinary.ReadInt(buffer.Span) - sizeof(int);
             Array.Resize(ref dataReadBuffer, Math.Max(dataReadBuffer.Length, size));
-            buffer = dataReadBuffer;
-            read = 0;
-            totalRead = 0;
-            do
-            {
-                read = await stream.ReadAsync(buffer[read..size], ct.Value);
-                totalRead += read;
-            }
-            while(read != 0 && totalRead < size);
-            if(totalRead == 0)
+            buffer = new Memory<byte>(dataReadBuffer, 0, size);
+            if(await ReadBuffer(buffer, ct.Value) != buffer.Length)
             {
                 return default;
             }
 
             TransferMessage.Type type = (TransferMessage.Type)TransferBinary.ReadByte(buffer[..sizeof(byte)].Span);
             long dataSize = TransferBinary.ReadLong(buffer.Slice(sizeof(byte), sizeof(long)).Span);
-            string path = TransferBinary.ReadString(buffer[(sizeof(byte) + sizeof(long))..size].Span);
+            string path = TransferBinary.ReadString(buffer[(sizeof(byte) + sizeof(long))..].Span);
             Interlocked.Add(ref receiveFrame, size + sizeof(int));
             return new TransferMessage(type, path, dataSize);
+        }
+
+        private async Task<int> ReadBuffer(Memory<byte> buffer, CancellationToken ct)
+        {
+            int read;
+            int totalRead = 0;
+            do
+            {
+                read = await stream.ReadAsync(buffer[totalRead..], ct);
+                totalRead += read;
+            }
+            while(read != 0 && totalRead < buffer.Length);
+            return totalRead;
         }
 
         public async Task<long> ReadData(string destPath, TransferMessage msg, IProgress<long>? progress = null, CancellationToken? ct = null)

@@ -97,12 +97,6 @@ namespace NetShare.Services
                         await protocol.SendAsync(msg, file, subProgress, ct);
                         completedSize += fileSize;
                         ReportProgress(++completed, completedSize, protocol.TransferRate);
-
-                        msg = await protocol.ReadAsync(ct);
-                        if(msg.type != TransferMessage.Type.Continue)
-                        {
-                            HandleError(msg.type == TransferMessage.Type.Cancel ? "Transfer cancelled by target" : $"Unexpected response ({msg.type})");
-                        }
                     }
                     ReportProgress(completed, completedSize, 0, true);
 

@@ -134,8 +134,6 @@ namespace NetShare.Services
                             received += await protocol.ReadData(path, msg, subProgress, ct);
                             completed++;
                             ReportProgress(completed, received, protocol.ReceiveRate);
-
-                            await protocol.SendAsync(new TransferMessage(TransferMessage.Type.Continue));
                         }
                         else
                         {

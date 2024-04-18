@@ -12,7 +12,6 @@
             RequestTransfer,
             AcceptReceive,
             DeclineReceive,
-            Continue,
             Cancel,
             Complete,
             File
