@@ -123,15 +123,25 @@ namespace NetShare.Services
                     do
                     {
                         msg = await protocol.ReadAsync(ct);
-                        if(msg.type == TransferMessage.Type.File)
+                        if(msg.type == TransferMessage.Type.File || msg.type == TransferMessage.Type.Directory)
                         {
                             string path = Path.Combine(downloadPath, msg.path ?? "");
-                            string? dir = Path.GetDirectoryName(path);
-                            if(dir != null && !Directory.Exists(dir))
+                            if(msg.type == TransferMessage.Type.File)
                             {
-                                Directory.CreateDirectory(dir);
+                                string? dir = Path.GetDirectoryName(path);
+                                if(dir != null && !Directory.Exists(dir))
+                                {
+                                    Directory.CreateDirectory(dir);
+                                }
+                                received += await protocol.ReadData(path, msg, subProgress, ct);
                             }
-                            received += await protocol.ReadData(path, msg, subProgress, ct);
+                            else
+                            {
+                                if(!Directory.Exists(path))
+                                {
+                                    Directory.CreateDirectory(path);
+                                }
+                            }
                             completed++;
                             ReportProgress(completed, received, protocol.ReceiveRate);
                         }

@@ -12,11 +12,11 @@ namespace NetShare.Models
 
         private readonly string rootDir;
         private readonly List<string> inputFiles;
-        private readonly List<FileInfo> fileEntries = new List<FileInfo>();
+        private readonly List<FileSystemInfo> fileEntries = new List<FileSystemInfo>();
         private long totalSize = 0;
 
         public string RootPath => rootDir;
-        public IEnumerable<FileInfo> Entries => fileEntries;
+        public IEnumerable<FileSystemInfo> Entries => fileEntries;
         public int EntryCount => fileEntries.Count;
         public long TotalSize => totalSize;
 
@@ -96,16 +96,16 @@ namespace NetShare.Models
                         FileAttributes attributes = File.GetAttributes(input);
                         if(attributes.HasFlag(FileAttributes.Directory))
                         {
-                            foreach(string file in Directory.EnumerateFiles(input, "", SearchOption.AllDirectories))
+                            AddEntry(input, progress);
+
+                            foreach(string file in Directory.EnumerateFileSystemEntries(input, "", SearchOption.AllDirectories))
                             {
-                                AddFile(file);
-                                progress?.Report((fileEntries.Count, totalSize / 1024d / 1024d));
+                                AddEntry(file, progress);
                             }
                         }
                         else
                         {
-                            AddFile(input);
-                            progress?.Report((fileEntries.Count, totalSize / 1024d / 1024d));
+                            AddEntry(input, progress);
                         }
                     }
                     catch { }
@@ -113,13 +113,24 @@ namespace NetShare.Models
             });
         }
 
-        private void AddFile(string file)
+        private void AddEntry(string entry, IProgress<(int files, double size)> progress)
         {
             try
             {
-                FileInfo fileInfo = new FileInfo(file);
-                totalSize += fileInfo.Length;
-                fileEntries.Add(fileInfo);
+                FileAttributes attributes = File.GetAttributes(entry);
+                FileSystemInfo info;
+                if(attributes.HasFlag(FileAttributes.Directory))
+                {
+                    info = new DirectoryInfo(entry);
+                }
+                else
+                {
+                    FileInfo fileInfo = new FileInfo(entry);
+                    totalSize += fileInfo.Length;
+                    info = fileInfo;
+                }
+                fileEntries.Add(info);
+                progress?.Report((fileEntries.Count, totalSize / 1024d / 1024d));
             }
             catch { }
         }

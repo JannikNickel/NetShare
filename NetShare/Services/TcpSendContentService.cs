@@ -87,15 +87,23 @@ namespace NetShare.Services
                     long completedSize = 0;
                     string rootPath = content.RootPath;
                     Progress<long> subProgress = new Progress<long>(subTransferred => ReportProgress(completed, completedSize + subTransferred, protocol.TransferRate));
-                    foreach(FileInfo file in content.Entries)
+                    foreach(FileSystemInfo fsInfo in content.Entries)
                     {
-                        long fileSize = file.Length;
                         string relPath = !string.IsNullOrEmpty(rootPath)
-                            ? Path.GetRelativePath(rootPath, file.FullName)
-                            : file.FullName[(Path.GetPathRoot(file.FullName)?.Length ?? 0)..];
-                        msg = new TransferMessage(TransferMessage.Type.File, relPath, fileSize);
-                        await protocol.SendAsync(msg, file, subProgress, ct);
-                        completedSize += fileSize;
+                            ? Path.GetRelativePath(rootPath, fsInfo.FullName)
+                            : fsInfo.FullName[(Path.GetPathRoot(fsInfo.FullName)?.Length ?? 0)..];
+                        if(fsInfo is FileInfo file)
+                        {
+                            long fileSize = file.Length;                            
+                            msg = new TransferMessage(TransferMessage.Type.File, relPath, fileSize);
+                            await protocol.SendAsync(msg, file, subProgress, ct);
+                            completedSize += fileSize;
+                        }
+                        else if(fsInfo is DirectoryInfo dir)
+                        {
+                            msg = new TransferMessage(TransferMessage.Type.Directory, relPath);
+                            await protocol.SendAsync(msg, null, null, ct);
+                        }
                         ReportProgress(++completed, completedSize, protocol.TransferRate);
                     }
                     ReportProgress(completed, completedSize, 0, true);

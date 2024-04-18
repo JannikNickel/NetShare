@@ -14,7 +14,8 @@
             DeclineReceive,
             Cancel,
             Complete,
-            File
+            File,
+            Directory
         }
     }
 }
